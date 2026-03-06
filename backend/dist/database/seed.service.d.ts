@@ -1,0 +1,32 @@
+import { Repository } from 'typeorm';
+import { Ledger } from '../finance/entities/ledger.entity';
+import { Account } from '../finance/entities/account.entity';
+import { Supplier } from '../procurement/entities/supplier.entity';
+import { ProductionItem } from '../production/entities/production-item.entity';
+import { WorkCenter } from '../production/entities/work-center.entity';
+import { Warehouse } from '../warehouse/entities/warehouse.entity';
+import { Location } from '../warehouse/entities/location.entity';
+import { Employee } from '../hr/entities/employee.entity';
+import { User } from '../auth/entities/user.entity';
+import { ApprovalWorkflow } from '../core/entities/approval-workflow.entity';
+export declare class SeedService {
+    private readonly ledgerRepo;
+    private readonly accountRepo;
+    private readonly supplierRepo;
+    private readonly itemRepo;
+    private readonly wcRepo;
+    private readonly warehouseRepo;
+    private readonly locationRepo;
+    private readonly employeeRepo;
+    private readonly userRepo;
+    private readonly workflowRepo;
+    constructor(ledgerRepo: Repository<Ledger>, accountRepo: Repository<Account>, supplierRepo: Repository<Supplier>, itemRepo: Repository<ProductionItem>, wcRepo: Repository<WorkCenter>, warehouseRepo: Repository<Warehouse>, locationRepo: Repository<Location>, employeeRepo: Repository<Employee>, userRepo: Repository<User>, workflowRepo: Repository<ApprovalWorkflow>);
+    run(): Promise<void>;
+    private seedAuth;
+    private seedWorkflows;
+    private seedFinance;
+    private seedProcurement;
+    private seedProduction;
+    private seedWarehouse;
+    private seedHr;
+}
