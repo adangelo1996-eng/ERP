@@ -9,6 +9,7 @@ export declare class ProductionService {
     private readonly events;
     private readonly tenantContext;
     constructor(moRepo: Repository<ManufacturingOrder>, itemRepo: Repository<ProductionItem>, events: EventBusService, tenantContext: TenantContextService);
+    listProductionItems(limit?: number): Promise<ProductionItem[]>;
     getManufacturingOrder(id: string): Promise<ManufacturingOrder>;
     listManufacturingOrders(limit?: number, status?: string): Promise<ManufacturingOrder[]>;
     createManufacturingOrder(input: {

@@ -1,12 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import { useRole } from "@/lib/role-context";
 import { DataTable } from "@/components/DataTable";
 
 type Employee = { id: string; code: string; fullName: string; email: string };
 type TimeEntry = { id: string; clockIn: string; clockOut?: string; status: string; employee?: { fullName: string } };
+
+function todayStart(): string {
+  const d = new Date();
+  d.setHours(9, 0, 0, 0);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
+function todayEnd(): string {
+  const d = new Date();
+  d.setHours(17, 0, 0, 0);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
 
 export default function HrPage() {
   const { role } = useRole();
@@ -33,14 +48,20 @@ export default function HrPage() {
     e.preventDefault();
     const form = e.currentTarget;
     const body = {
-      employeeId: (form.elements.namedItem("employeeId") as HTMLInputElement).value,
+      employeeId: (form.elements.namedItem("employeeId") as HTMLSelectElement).value,
       clockIn: (form.elements.namedItem("clockIn") as HTMLInputElement).value,
-      clockOut: (form.elements.namedItem("clockOut") as HTMLInputElement).value || undefined,
+      clockOut: (form.elements.namedItem("clockOut") as HTMLInputElement)?.value || undefined,
     };
     const r = await api.hr.recordTimeEntry(body);
     const data = await r.json().catch(() => ({}));
-    setResult(r.ok ? `Timbratura registrata: ${data.id || "OK"}` : `${r.status} ${await r.text()}`);
-    if (r.ok && data.id) setTimeEntryId(data.id);
+    if (r.ok) {
+      toast.success("Timbratura registrata");
+      setTimeEntryId(data.id || "");
+      api.hr.listTimeEntries().then(async (r2) => {
+        if (r2.ok) setTimeEntries(await r2.json());
+      });
+    } else toast.error(`${r.status}`);
+    setResult(r.ok ? "OK" : `${r.status} ${await r.text()}`);
   }
 
   async function handleCreateEmployee(e: React.FormEvent<HTMLFormElement>) {
@@ -116,25 +137,25 @@ export default function HrPage() {
                 <option key={e.id} value={e.id}>{e.fullName} ({e.code})</option>
               ))}
             </select>
-            <input name="clockIn" type="datetime-local" placeholder="Entrata" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
-            <input name="clockOut" type="datetime-local" placeholder="Uscita (opzionale)" className="rounded border px-3 py-2 dark:bg-zinc-900" />
+            <input name="clockIn" type="datetime-local" required className="rounded border px-3 py-2 dark:bg-zinc-900" defaultValue={todayStart()} />
+            <input name="clockOut" type="datetime-local" placeholder="Uscita (opzionale)" className="rounded border px-3 py-2 dark:bg-zinc-900" defaultValue={todayEnd()} />
             <button type="submit" className="rounded bg-zinc-900 px-4 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900">
               Registra
             </button>
           </form>
-          <div className="mt-4 flex gap-2">
-            <input
-              value={timeEntryId}
-              onChange={(e) => setTimeEntryId(e.target.value)}
-              placeholder="ID timbratura da approvare"
-              className="flex-1 rounded border px-3 py-2 dark:bg-zinc-900"
-            />
-            <button
-              onClick={handleApproveTimeEntry}
-              className="rounded bg-amber-600 px-4 py-2 text-white hover:bg-amber-700"
-            >
-              Approva
-            </button>
+          <div className="mt-4">
+            <label className="mb-2 block text-sm font-medium text-zinc-600 dark:text-zinc-400">Approva timbratura</label>
+            <div className="flex gap-2">
+              <select value={timeEntryId} onChange={(e) => setTimeEntryId(e.target.value)} className="flex-1 rounded border px-3 py-2 dark:bg-zinc-900">
+                <option value="">Seleziona timbratura</option>
+                {timeEntries.filter((t) => t.status === "RECORDED").map((t) => (
+                  <option key={t.id} value={t.id}>{t.employee?.fullName ?? "?"} – {new Date(t.clockIn).toLocaleString()}</option>
+                ))}
+              </select>
+              <button onClick={handleApproveTimeEntry} disabled={!timeEntryId} className="rounded bg-amber-600 px-4 py-2 text-white hover:bg-amber-700 disabled:opacity-50">
+                Approva
+              </button>
+            </div>
           </div>
           {result && <p className="mt-2 text-sm">{result}</p>}
         </section>

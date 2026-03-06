@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import { useRole } from "@/lib/role-context";
 import { DataTable } from "@/components/DataTable";
+import { useLookupData, today, addDays } from "@/lib/use-lookup-data";
 
 type Ledger = { id: string; name: string };
 type Account = { id: string; code: string; name: string };
@@ -16,6 +17,7 @@ type Tab = "entries" | "invoices" | "payments" | "forms";
 
 export default function FinancePage() {
   const { role } = useRole();
+  const lookup = useLookupData();
   const [tab, setTab] = useState<Tab>("entries");
   const [ledgers, setLedgers] = useState<Ledger[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -127,13 +129,15 @@ export default function FinancePage() {
   async function handlePayment(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
+    const sel = form.elements.namedItem("invoiceId") as HTMLSelectElement;
+    const opt = sel?.selectedOptions?.[0];
     const body = {
-      counterpartyId: (form.elements.namedItem("invoiceId") as HTMLInputElement).value,
+      counterpartyId: (opt?.getAttribute?.("data-supplier-id") || opt?.dataset?.supplierId || sel?.value) as string,
       direction: "OUTBOUND" as const,
       paymentDate: (form.elements.namedItem("date") as HTMLInputElement).value,
       currency: "EUR",
       amount: (form.elements.namedItem("amount") as HTMLInputElement).value,
-      relatedInvoiceId: (form.elements.namedItem("invoiceId") as HTMLInputElement).value,
+      relatedInvoiceId: sel?.value,
     };
     const r = await api.finance.recordPayment(body);
     if (r.ok) {
@@ -248,7 +252,7 @@ export default function FinancePage() {
                 <option key={l.id} value={l.id}>{l.name}</option>
               ))}
             </select>
-            <input name="date" type="date" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
+            <input name="date" type="date" required defaultValue={today()} className="rounded border px-3 py-2 dark:bg-zinc-900" />
             <input name="reference" placeholder="Riferimento" className="rounded border px-3 py-2 dark:bg-zinc-900" />
             <select name="debitAccount" required className="rounded border px-3 py-2 dark:bg-zinc-900">
               <option value="">Conto dare</option>
@@ -272,9 +276,14 @@ export default function FinancePage() {
         <section className="rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">
           <h2 className="mb-4 font-semibold">Fattura fornitore</h2>
           <form onSubmit={handleSupplierInvoice} className="flex flex-col gap-3">
-            <input name="supplierId" placeholder="ID fornitore" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
-            <input name="invoiceDate" type="date" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
-            <input name="dueDate" type="date" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
+            <select name="supplierId" required className="rounded border px-3 py-2 dark:bg-zinc-900" disabled={lookup.loading}>
+              <option value="">Fornitore</option>
+              {lookup.suppliers.map((s) => (
+                <option key={s.id} value={s.id}>{s.code} – {s.name}</option>
+              ))}
+            </select>
+            <input name="invoiceDate" type="date" required defaultValue={today()} className="rounded border px-3 py-2 dark:bg-zinc-900" />
+            <input name="dueDate" type="date" required defaultValue={addDays(today(), 30)} className="rounded border px-3 py-2 dark:bg-zinc-900" />
             <input name="amount" type="number" placeholder="Importo" step="0.01" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
             <button type="submit" className="rounded bg-zinc-900 px-4 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900">
               Registra fattura
@@ -284,11 +293,30 @@ export default function FinancePage() {
         </section>
         <section className="rounded-xl border border-zinc-200 p-6 dark:border-zinc-800 lg:col-span-2">
           <h2 className="mb-4 font-semibold">Pagamento</h2>
-          <form onSubmit={handlePayment} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <input name="invoiceId" placeholder="ID fattura fornitore" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
+          <form onSubmit={handlePayment} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <select
+              name="invoiceId"
+              required
+              className="min-w-[200px] rounded border px-3 py-2 dark:bg-zinc-900"
+              onChange={(e) => {
+                const opt = e.target.selectedOptions[0];
+                const amt = opt?.dataset?.amount;
+                if (amt) (e.target.form?.elements.namedItem("amount") as HTMLInputElement).value = amt;
+              }}
+              disabled={lookup.loading}
+            >
+              <option value="">Fattura da pagare</option>
+              {lookup.supplierInvoices
+                .filter((i) => i.status === "REGISTERED" || i.status === "POSTED")
+                .map((i) => (
+                  <option key={i.id} value={i.id} data-supplier-id={i.supplierId} data-amount={i.totalNet}>
+                    {i.supplierId} – {i.totalNet} €
+                  </option>
+                ))}
+            </select>
             <input name="amount" type="number" placeholder="Importo" step="0.01" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
-            <input name="date" type="date" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
-            <button type="submit" className="rounded bg-zinc-900 px-4 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900">
+            <input name="date" type="date" required defaultValue={today()} className="rounded border px-3 py-2 dark:bg-zinc-900" />
+            <button type="submit" className="rounded bg-zinc-900 px-4 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900" disabled={lookup.loading}>
               Registra pagamento
             </button>
           </form>

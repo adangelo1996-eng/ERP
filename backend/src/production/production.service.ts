@@ -17,6 +17,15 @@ export class ProductionService {
     private readonly tenantContext: TenantContextService,
   ) {}
 
+  async listProductionItems(limit = 200) {
+    const tenantId = this.tenantContext.getTenantId();
+    return this.itemRepo.find({
+      where: { tenantId },
+      order: { itemId: 'ASC' },
+      take: limit,
+    });
+  }
+
   async getManufacturingOrder(id: string) {
     const tenantId = this.tenantContext.getTenantId();
     return this.moRepo.findOneOrFail({

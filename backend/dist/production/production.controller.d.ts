@@ -3,6 +3,7 @@ import { CreateManufacturingOrderDto } from './dto/create-mo.dto';
 export declare class ProductionController {
     private readonly production;
     constructor(production: ProductionService);
+    listItems(): Promise<import("./entities/production-item.entity").ProductionItem[]>;
     listMOs(status?: string): Promise<import("./entities/manufacturing-order.entity").ManufacturingOrder[]>;
     getMO(id: string): Promise<import("./entities/manufacturing-order.entity").ManufacturingOrder>;
     createMO(body: CreateManufacturingOrderDto): Promise<import("./entities/manufacturing-order.entity").ManufacturingOrder>;

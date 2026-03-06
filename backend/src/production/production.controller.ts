@@ -7,6 +7,11 @@ import { CreateManufacturingOrderDto } from './dto/create-mo.dto';
 export class ProductionController {
   constructor(private readonly production: ProductionService) {}
 
+  @Get('items')
+  listItems() {
+    return this.production.listProductionItems();
+  }
+
   @Get('mos')
   @Roles('PRODUCTION_PLANNER')
   listMOs(@Query('status') status?: string) {

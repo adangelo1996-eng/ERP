@@ -31,6 +31,14 @@ let ProductionService = class ProductionService {
         this.events = events;
         this.tenantContext = tenantContext;
     }
+    async listProductionItems(limit = 200) {
+        const tenantId = this.tenantContext.getTenantId();
+        return this.itemRepo.find({
+            where: { tenantId },
+            order: { itemId: 'ASC' },
+            take: limit,
+        });
+    }
     async getManufacturingOrder(id) {
         const tenantId = this.tenantContext.getTenantId();
         return this.moRepo.findOneOrFail({

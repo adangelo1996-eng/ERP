@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useRole } from "@/lib/role-context";
 import { DataTable } from "@/components/DataTable";
+import { useLookupData, addDays, today } from "@/lib/use-lookup-data";
 
 type MO = { id: string; quantity: string; dueDate: string; status: string; item?: { itemId: string } };
 
 export default function ProductionPage() {
   const router = useRouter();
   const { role } = useRole();
+  const lookup = useLookupData();
   const [result, setResult] = useState<string>("");
   const [moId, setMoId] = useState("");
   const [mos, setMos] = useState<MO[]>([]);
@@ -34,8 +37,14 @@ export default function ProductionPage() {
     };
     const r = await api.production.createMO(body, role);
     const data = await r.json().catch(() => ({}));
-    setResult(r.ok ? `MO creato: ${data.id || "OK"}` : `${r.status} ${await r.text()}`);
-    if (r.ok && data.id) setMoId(data.id);
+    if (r.ok) {
+      toast.success("MO creato");
+      setMoId(data.id || "");
+      api.production.listMOs(undefined, role).then(async (r2) => {
+        if (r2.ok) setMos(await r2.json());
+      });
+    } else toast.error(`${r.status}`);
+    setResult(r.ok ? "OK" : `${r.status} ${await r.text()}`);
   }
 
   async function handleRelease() {
@@ -78,22 +87,27 @@ export default function ProductionPage() {
         <section className="rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">
           <h2 className="mb-4 font-semibold">Nuovo ordine di produzione (MO)</h2>
           <form onSubmit={handleCreateMO} className="flex flex-col gap-3">
-            <input name="itemId" placeholder="ID articolo" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
-            <input name="quantity" type="number" placeholder="Quantità" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
-            <input name="dueDate" type="date" placeholder="Data consegna" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
-            <button type="submit" className="rounded bg-zinc-900 px-4 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900">
+            <select name="itemId" required className="rounded border px-3 py-2 dark:bg-zinc-900" disabled={lookup.loading}>
+              <option value="">Articolo</option>
+              {lookup.items.map((i) => (
+                <option key={i.id} value={i.itemId}>{i.itemId}</option>
+              ))}
+            </select>
+            <input name="quantity" type="number" placeholder="Quantità" min="1" defaultValue="1" required className="rounded border px-3 py-2 dark:bg-zinc-900" />
+            <input name="dueDate" type="date" required defaultValue={addDays(today(), 14)} className="rounded border px-3 py-2 dark:bg-zinc-900" />
+            <button type="submit" className="rounded bg-zinc-900 px-4 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900" disabled={lookup.loading}>
               Crea MO
             </button>
           </form>
         </section>
         <section className="rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">
           <h2 className="mb-4 font-semibold">Azioni MO</h2>
-          <input
-            value={moId}
-            onChange={(e) => setMoId(e.target.value)}
-            placeholder="ID ordine di produzione"
-            className="mb-3 w-full rounded border px-3 py-2 dark:bg-zinc-900"
-          />
+          <select value={moId} onChange={(e) => setMoId(e.target.value)} className="mb-3 w-full rounded border px-3 py-2 dark:bg-zinc-900">
+            <option value="">Seleziona MO</option>
+            {mos.filter((m) => m.status === "PLANNED" || m.status === "RELEASED").map((m) => (
+              <option key={m.id} value={m.id}>{m.item?.itemId ?? "?"} × {m.quantity} – {m.status}</option>
+            ))}
+          </select>
           <div className="flex gap-2">
             <button
               onClick={handleRelease}

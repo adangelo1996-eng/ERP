@@ -76,6 +76,7 @@ export const api = {
       fetchApi("/finance/payments", { method: "POST", body: JSON.stringify(body) }),
   },
   production: {
+    listItems: (role?: Role) => fetchApi("/production/items", { role }),
     listMOs: (status?: string, role?: Role) =>
       fetchApi(`/production/mos${status ? `?status=${status}` : ""}`, { role }),
     getMO: (id: string, role?: Role) => fetchApi(`/production/mos/${id}`, { role }),

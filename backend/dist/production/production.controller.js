@@ -22,6 +22,9 @@ let ProductionController = class ProductionController {
     constructor(production) {
         this.production = production;
     }
+    listItems() {
+        return this.production.listProductionItems();
+    }
     listMOs(status) {
         return this.production.listManufacturingOrders(50, status);
     }
@@ -39,6 +42,12 @@ let ProductionController = class ProductionController {
     }
 };
 exports.ProductionController = ProductionController;
+__decorate([
+    (0, common_1.Get)('items'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], ProductionController.prototype, "listItems", null);
 __decorate([
     (0, common_1.Get)('mos'),
     (0, roles_decorator_1.Roles)('PRODUCTION_PLANNER'),
