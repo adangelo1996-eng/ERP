@@ -36,16 +36,27 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
             }),
             typeorm_1.TypeOrmModule.forRootAsync({
-                useFactory: () => ({
-                    type: 'postgres',
-                    host: process.env.DB_HOST || 'localhost',
-                    port: Number(process.env.DB_PORT) || 5432,
-                    username: process.env.DB_USER || 'erp',
-                    password: process.env.DB_PASSWORD || 'erp',
-                    database: process.env.DB_NAME || 'erp',
-                    autoLoadEntities: true,
-                    synchronize: true,
-                }),
+                useFactory: () => {
+                    const useSqlite = process.env.USE_SQLITE === 'true' || process.env.DB_TYPE === 'sqlite';
+                    if (useSqlite) {
+                        return {
+                            type: 'better-sqlite3',
+                            database: process.env.SQLITE_PATH || 'erp.sqlite',
+                            autoLoadEntities: true,
+                            synchronize: true,
+                        };
+                    }
+                    return {
+                        type: 'postgres',
+                        host: process.env.DB_HOST || 'localhost',
+                        port: Number(process.env.DB_PORT) || 5432,
+                        username: process.env.DB_USER || 'erp',
+                        password: process.env.DB_PASSWORD || 'erp',
+                        database: process.env.DB_NAME || 'erp',
+                        autoLoadEntities: true,
+                        synchronize: true,
+                    };
+                },
             }),
             core_module_1.CoreModule,
             finance_module_1.FinanceModule,

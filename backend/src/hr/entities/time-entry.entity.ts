@@ -9,10 +9,10 @@ export class TimeEntry extends BaseEntityWithTenant {
   @ManyToOne(() => Employee, { nullable: false })
   employee!: Employee;
 
-  @Column({ type: 'timestamptz' })
+  @Column({ type: 'datetime' })
   clockIn!: Date;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   clockOut?: Date | null;
 
   @Column({ type: 'varchar', length: 32 })

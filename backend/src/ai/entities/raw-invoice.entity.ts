@@ -8,7 +8,7 @@ export class RawInvoice extends BaseEntityWithTenant {
   @Column({ type: 'varchar', length: 128 })
   externalId!: string; // id nel cassetto fiscale
 
-  @Column({ type: 'jsonb' })
+  @Column({ type: 'simple-json' })
   payload!: unknown;
 
   @Column({ type: 'varchar', length: 16 })

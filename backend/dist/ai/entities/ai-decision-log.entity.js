@@ -38,7 +38,7 @@ __decorate([
     __metadata("design:type", Boolean)
 ], AiDecisionLog.prototype, "autoApplied", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'jsonb', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'simple-json', nullable: true }),
     __metadata("design:type", Object)
 ], AiDecisionLog.prototype, "suggestion", void 0);
 __decorate([

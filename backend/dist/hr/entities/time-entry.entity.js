@@ -25,11 +25,11 @@ __decorate([
     __metadata("design:type", employee_entity_1.Employee)
 ], TimeEntry.prototype, "employee", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamptz' }),
+    (0, typeorm_1.Column)({ type: 'datetime' }),
     __metadata("design:type", Date)
 ], TimeEntry.prototype, "clockIn", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'datetime', nullable: true }),
     __metadata("design:type", Object)
 ], TimeEntry.prototype, "clockOut", void 0);
 __decorate([

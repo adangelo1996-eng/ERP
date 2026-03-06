@@ -15,7 +15,7 @@ export class AiDecisionLog extends BaseEntityWithTenant {
   @Column({ type: 'boolean' })
   autoApplied!: boolean;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'simple-json', nullable: true })
   suggestion?: unknown;
 
   @Column({ type: 'varchar', length: 16, nullable: true })

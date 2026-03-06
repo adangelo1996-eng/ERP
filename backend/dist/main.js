@@ -6,7 +6,13 @@ const app_module_1 = require("./app.module");
 async function bootstrap() {
     try {
         const app = await core_1.NestFactory.create(app_module_1.AppModule);
-        app.enableCors({ origin: ['http://localhost:3001', 'http://127.0.0.1:3001'] });
+        app.enableCors({
+            origin: [
+                'http://localhost:3001',
+                'http://127.0.0.1:3001',
+                'https://erp-topaz-beta.vercel.app',
+            ],
+        });
         app.useGlobalPipes(new common_1.ValidationPipe({
             whitelist: true,
             forbidNonWhitelisted: true,

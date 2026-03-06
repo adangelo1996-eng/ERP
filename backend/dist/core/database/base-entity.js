@@ -27,11 +27,11 @@ __decorate([
     __metadata("design:type", String)
 ], BaseEntityWithTenant.prototype, "tenantId", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)({ type: 'timestamptz' }),
+    (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], BaseEntityWithTenant.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.UpdateDateColumn)({ type: 'timestamptz' }),
+    (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
 ], BaseEntityWithTenant.prototype, "updatedAt", void 0);
 //# sourceMappingURL=base-entity.js.map

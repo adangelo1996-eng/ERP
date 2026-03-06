@@ -7,6 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "seed": "ts-node -r tsconfig-paths/register src/seed.ts",
+    "demo": "USE_SQLITE=true npm run seed && PORT=3002 USE_SQLITE=true npm run start:dev",
+    "demo:prod": "USE_SQLITE=true npm run seed && USE_SQLITE=true npm run build && PORT=3002 USE_SQLITE=true npm run start:prod",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -29,6 +31,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
     "bcrypt": "^6.0.0",
+    "better-sqlite3": "^11.10.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "fast-xml-parser": "^5.4.2",

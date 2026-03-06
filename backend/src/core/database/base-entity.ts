@@ -12,10 +12,10 @@ export abstract class BaseEntityWithTenant {
   @Column({ type: 'varchar', length: 64 })
   tenantId!: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn()
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn()
   updatedAt!: Date;
 }
 

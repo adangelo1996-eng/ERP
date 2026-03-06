@@ -20,6 +20,6 @@ export class ApprovalStep extends BaseEntityWithTenant {
   @Column({ type: 'varchar', length: 64, nullable: true })
   approvedBy?: string;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   approvedAt?: Date;
 }

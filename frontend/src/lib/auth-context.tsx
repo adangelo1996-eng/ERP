@@ -6,6 +6,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
   type ReactNode,
 } from "react";
 
@@ -24,25 +25,14 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const STORAGE_KEY = "erp_token";
 const USER_KEY = "erp_user";
+const DEMO_ADMIN = { email: "admin@erp.local", password: "admin123" };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<{ email: string; fullName: string; role: string } | null>(null);
+  const autoLoginTried = useRef(false);
 
-  useEffect(() => {
-    const t = localStorage.getItem(STORAGE_KEY);
-    const u = localStorage.getItem(USER_KEY);
-    if (t && u) {
-      setToken(t);
-      try {
-        setUser(JSON.parse(u));
-      } catch {
-        localStorage.removeItem(USER_KEY);
-      }
-    }
-  }, []);
-
-  const login = useCallback(async (email: string, password: string) => {
+  const doLogin = useCallback(async (email: string, password: string) => {
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const r = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
@@ -59,6 +49,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return false;
   }, []);
+
+  useEffect(() => {
+    const t = localStorage.getItem(STORAGE_KEY);
+    const u = localStorage.getItem(USER_KEY);
+    if (t && u) {
+      setToken(t);
+      try {
+        setUser(JSON.parse(u));
+      } catch {
+        localStorage.removeItem(USER_KEY);
+      }
+      return;
+    }
+    // Auto-login admin per fase di test (NEXT_PUBLIC_AUTO_LOGIN=true o non impostato in dev)
+    const autoLogin = process.env.NEXT_PUBLIC_AUTO_LOGIN !== "false";
+    if (autoLogin && !autoLoginTried.current) {
+      autoLoginTried.current = true;
+      doLogin(DEMO_ADMIN.email, DEMO_ADMIN.password).catch(() => {});
+    }
+  }, [doLogin]);
+
+  const login = useCallback(
+    (email: string, password: string) => doLogin(email, password),
+    [doLogin],
+  );
 
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);

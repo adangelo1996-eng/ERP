@@ -3,14 +3,25 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Ledger } from '../finance/entities/ledger.entity';
 import { Account } from '../finance/entities/account.entity';
+import { JournalEntry } from '../finance/entities/journal-entry.entity';
+import { JournalLine } from '../finance/entities/journal-line.entity';
 import { Supplier } from '../procurement/entities/supplier.entity';
+import { PurchaseRequest } from '../procurement/entities/purchase-request.entity';
 import { ProductionItem } from '../production/entities/production-item.entity';
 import { WorkCenter } from '../production/entities/work-center.entity';
+import { ManufacturingOrder } from '../production/entities/manufacturing-order.entity';
 import { Warehouse } from '../warehouse/entities/warehouse.entity';
 import { Location } from '../warehouse/entities/location.entity';
+import { StockItem } from '../warehouse/entities/stock.entity';
 import { Employee } from '../hr/entities/employee.entity';
+import { TimeEntry } from '../hr/entities/time-entry.entity';
 import { User } from '../auth/entities/user.entity';
 import { ApprovalWorkflow } from '../core/entities/approval-workflow.entity';
+import { Contract } from '../legal/entities/contract.entity';
+import { LegalCase } from '../legal/entities/legal-case.entity';
+import { InvestmentProposal } from '../investment/entities/investment-proposal.entity';
+import { InvestmentScenario } from '../investment/entities/scenario.entity';
+import { Shipment } from '../logistics/entities/shipment.entity';
 import * as bcrypt from 'bcrypt';
 
 const TENANT_ID = 'default';
@@ -22,22 +33,44 @@ export class SeedService {
     private readonly ledgerRepo: Repository<Ledger>,
     @InjectRepository(Account)
     private readonly accountRepo: Repository<Account>,
+    @InjectRepository(JournalEntry)
+    private readonly journalRepo: Repository<JournalEntry>,
+    @InjectRepository(JournalLine)
+    private readonly journalLineRepo: Repository<JournalLine>,
     @InjectRepository(Supplier)
     private readonly supplierRepo: Repository<Supplier>,
+    @InjectRepository(PurchaseRequest)
+    private readonly prRepo: Repository<PurchaseRequest>,
     @InjectRepository(ProductionItem)
     private readonly itemRepo: Repository<ProductionItem>,
     @InjectRepository(WorkCenter)
     private readonly wcRepo: Repository<WorkCenter>,
+    @InjectRepository(ManufacturingOrder)
+    private readonly moRepo: Repository<ManufacturingOrder>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepo: Repository<Warehouse>,
     @InjectRepository(Location)
     private readonly locationRepo: Repository<Location>,
+    @InjectRepository(StockItem)
+    private readonly stockRepo: Repository<StockItem>,
     @InjectRepository(Employee)
     private readonly employeeRepo: Repository<Employee>,
+    @InjectRepository(TimeEntry)
+    private readonly timeEntryRepo: Repository<TimeEntry>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     @InjectRepository(ApprovalWorkflow)
     private readonly workflowRepo: Repository<ApprovalWorkflow>,
+    @InjectRepository(Contract)
+    private readonly contractRepo: Repository<Contract>,
+    @InjectRepository(LegalCase)
+    private readonly legalCaseRepo: Repository<LegalCase>,
+    @InjectRepository(InvestmentProposal)
+    private readonly invProposalRepo: Repository<InvestmentProposal>,
+    @InjectRepository(InvestmentScenario)
+    private readonly invScenarioRepo: Repository<InvestmentScenario>,
+    @InjectRepository(Shipment)
+    private readonly shipmentRepo: Repository<Shipment>,
   ) {}
 
   async run() {
@@ -48,6 +81,7 @@ export class SeedService {
     await this.seedProduction();
     await this.seedWarehouse();
     await this.seedHr();
+    await this.seedDemoData();
     console.log('Seed completed successfully');
   }
 
@@ -216,5 +250,220 @@ export class SeedService {
       );
     }
     console.log('HR seeded');
+  }
+
+  private async seedDemoData() {
+    const hasData = await this.journalRepo.count({ where: { tenantId: TENANT_ID } });
+    if (hasData > 0) {
+      console.log('Demo data already exists, skipping');
+      return;
+    }
+
+    const ledger = await this.ledgerRepo.findOne({ where: { tenantId: TENANT_ID } });
+    const accounts = await this.accountRepo.find({
+      where: { tenantId: TENANT_ID },
+      order: { code: 'ASC' },
+    });
+    const employees = await this.employeeRepo.find({ where: { tenantId: TENANT_ID } });
+    const items = await this.itemRepo.find({ where: { tenantId: TENANT_ID } });
+    const locations = await this.locationRepo.find({
+      where: { tenantId: TENANT_ID },
+      relations: ['warehouse'],
+      take: 3,
+    });
+
+    if (ledger && accounts.length >= 2) {
+      const entry1 = await this.journalRepo.save(
+        this.journalRepo.create({
+          tenantId: TENANT_ID,
+          ledger,
+          postingDate: '2025-03-01',
+          reference: 'Apertura cassa',
+          source: 'MANUAL',
+          posted: true,
+        }),
+      );
+      await this.journalLineRepo.save([
+        this.journalLineRepo.create({
+          tenantId: TENANT_ID,
+          entry: entry1,
+          account: accounts[0],
+          debit: '10000',
+          credit: '0',
+          description: 'Versamento iniziale',
+        }),
+        this.journalLineRepo.create({
+          tenantId: TENANT_ID,
+          entry: entry1,
+          account: accounts[3],
+          debit: '0',
+          credit: '10000',
+          description: 'Capitale iniziale',
+        }),
+      ]);
+      const entry2 = await this.journalRepo.save(
+        this.journalRepo.create({
+          tenantId: TENANT_ID,
+          ledger,
+          postingDate: '2025-03-05',
+          reference: 'Fattura acquisto SUP001',
+          source: 'PURCHASES',
+          posted: true,
+        }),
+      );
+      await this.journalLineRepo.save([
+        this.journalLineRepo.create({
+          tenantId: TENANT_ID,
+          entry: entry2,
+          account: accounts[2],
+          debit: '1200',
+          credit: '0',
+          description: 'Acquisto materiali',
+        }),
+        this.journalLineRepo.create({
+          tenantId: TENANT_ID,
+          entry: entry2,
+          account: accounts[1],
+          debit: '0',
+          credit: '1200',
+          description: 'Fornitore Alpha',
+        }),
+      ]);
+    }
+
+    if (employees.length > 0 && items.length > 0) {
+      await this.prRepo.save([
+        this.prRepo.create({
+          tenantId: TENANT_ID,
+          requesterId: employees[0].id,
+          itemId: items[0].itemId,
+          quantity: '50',
+          estimatedValue: '500',
+          status: 'APPROVED',
+        }),
+        this.prRepo.create({
+          tenantId: TENANT_ID,
+          requesterId: employees[1].id,
+          itemId: items[1].itemId,
+          quantity: '20',
+          estimatedValue: '200',
+          status: 'SUBMITTED',
+        }),
+      ]);
+    }
+
+    if (items.length > 0) {
+      await this.moRepo.save([
+        this.moRepo.create({
+          tenantId: TENANT_ID,
+          item: items[0],
+          quantity: '100',
+          dueDate: '2025-03-20',
+          status: 'RELEASED',
+        }),
+        this.moRepo.create({
+          tenantId: TENANT_ID,
+          item: items[1],
+          quantity: '50',
+          dueDate: '2025-03-25',
+          status: 'PLANNED',
+        }),
+      ]);
+    }
+
+    if (locations.length > 0) {
+      const loc = locations[0];
+      await this.stockRepo.save([
+        this.stockRepo.create({
+          tenantId: TENANT_ID,
+          location: loc,
+          itemId: 'ITEM-001',
+          quantity: '150',
+          batch: 'LOT001',
+        }),
+        this.stockRepo.create({
+          tenantId: TENANT_ID,
+          location: loc,
+          itemId: 'ITEM-002',
+          quantity: '80',
+        }),
+      ]);
+    }
+
+    if (employees.length > 0) {
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      await this.timeEntryRepo.save([
+        this.timeEntryRepo.create({
+          tenantId: TENANT_ID,
+          employee: employees[0],
+          clockIn: yesterday,
+          clockOut: new Date(yesterday.getTime() + 8 * 60 * 60 * 1000),
+          status: 'APPROVED',
+        }),
+        this.timeEntryRepo.create({
+          tenantId: TENANT_ID,
+          employee: employees[1],
+          clockIn: today,
+          status: 'RECORDED',
+        }),
+      ]);
+    }
+
+    await this.contractRepo.save([
+      this.contractRepo.create({
+        tenantId: TENANT_ID,
+        code: 'CNT-001',
+        title: 'Contratto fornitura annuale Alpha',
+        startDate: '2025-01-01',
+        endDate: '2025-12-31',
+      }),
+      this.contractRepo.create({
+        tenantId: TENANT_ID,
+        code: 'CNT-002',
+        title: 'NDA con partner tecnologico',
+        startDate: '2025-02-15',
+      }),
+    ]);
+
+    await this.legalCaseRepo.save(
+      this.legalCaseRepo.create({
+        tenantId: TENANT_ID,
+        title: 'Contenzioso ritardo consegna - Fornitore Beta',
+        status: 'OPEN',
+      }),
+    );
+
+    const prop = await this.invProposalRepo.save(
+      this.invProposalRepo.create({
+        tenantId: TENANT_ID,
+        title: 'Ampliamento linea produzione',
+        sponsorArea: 'PRODUCTION',
+      }),
+    );
+    await this.invScenarioRepo.save(
+      this.invScenarioRepo.create({
+        tenantId: TENANT_ID,
+        proposal: prop,
+        name: 'Base',
+        npv: '125000',
+      }),
+    );
+
+    await this.shipmentRepo.save([
+      this.shipmentRepo.create({
+        tenantId: TENANT_ID,
+        orderId: 'ORD-2025-001',
+        status: 'IN_TRANSIT',
+      }),
+      this.shipmentRepo.create({
+        tenantId: TENANT_ID,
+        orderId: 'ORD-2025-002',
+        status: 'DELIVERED',
+      }),
+    ]);
+
+    console.log('Demo data seeded');
   }
 }
